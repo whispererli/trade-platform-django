@@ -30,12 +30,15 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
+    'trader_rest',
     'django.contrib.admin',
-#   'django.contrib.auth',
-#   'django.contrib.contenttypes',
-#   'django.contrib.sessions',
-#   'django.contrib.messages',
-#   'django.contrib.staticfiles',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    
 )
 
 MIDDLEWARE_CLASSES = (
@@ -51,6 +54,9 @@ ROOT_URLCONF = 'trade_platform.urls'
 
 WSGI_APPLICATION = 'trade_platform.wsgi.application'
 
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 10,
+}
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
