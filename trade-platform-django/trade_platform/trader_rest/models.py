@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import logging
 
 from django.db import models
 
 
+logger = logging.getLogger('trader_rest')
 #  用户信息表 
 # CREATE TABLE user_tbl
 # (
@@ -24,7 +26,7 @@ from django.db import models
 #   UNIQUE KEY (uid, email),
 #   INDEX IDX_BY_EMAIL(email)
 # );
-# 
+#
 class UserProfile(models.Model):
     MALE, FEMALE = 'M', 'F'
     GENDER_CHOICES = (
@@ -57,12 +59,13 @@ class UserProfile(models.Model):
 class UserAddress(models.Model):
     uid  = models.ForeignKey(UserProfile, related_name='address') # Many-to-one User profile
     address1 = models.CharField(max_length=100)
-    address2 = models.CharField(max_length=100)
+    address2 = models.CharField(max_length=100, null=True)
     city  = models.CharField(max_length=10)
     nation  = models.CharField(max_length=10)
     post = models.CharField(max_length=10)
-    def __unicode__(self):
-        return self.address1, self.address2, self.city, self.nation, self.post
+#     def __unicode__(self):
+#         return self.address1, self.address2, self.city, self.nation, self.post
+        #return '%d: %s' % (self.address1, self.address2)
 #  用户登陆表 
 # CREATE TABLE user_login_tbl
 # (
@@ -76,7 +79,7 @@ class UserAddress(models.Model):
 # );
 class UserLogin(models.Model):
     uid = models.ForeignKey(UserProfile) # Many-to-one User profile
-    last_login = models.DateTimeField()
+    last_login = models.DateTimeField(auto_now_add=True)
     device = models.CharField(max_length=100)
     ip = models.IPAddressField(max_length=20)
 
@@ -113,7 +116,7 @@ class ProductCatalog(models.Model):
 class ProductCatalogItem(models.Model):
     item_name = models.CharField(max_length=100)
     item_required = models.BooleanField()
-    product_catalog = models.ForeignKey(ProductCatalog, related_name='catalog') # Many-to-one productCatalog
+    product_catalog = models.ForeignKey(ProductCatalog, related_name='catalog_items') # Many-to-one productCatalog
 
 #  用户订单表 
 # CREATE TABLE user_order_tbl
@@ -132,14 +135,24 @@ class ProductCatalogItem(models.Model):
 #   PRIMARY KEY (order_id)
 # );
 # 
+
 class UserOrder(models.Model):
-    uid = models.ForeignKey(UserProfile)
+    PREPARE, ACTIVE, FINISH, CANCEL = 'P', 'A', 'F', 'C'
+    STATUS_CHOICES = (
+    (PREPARE, 'Preparing'),
+    (ACTIVE, 'Active'),
+    (FINISH, 'Finish'),
+    (CANCEL, 'Cancelled'))
+    
     expect_date = models.DateField()
-    order_time = models.DateTimeField()
-    description = models.CharField(max_length=500)
-    product_catalog = models.ForeignKey(ProductCatalog, related_name='order_catalog')
+    order_time = models.DateTimeField(auto_now_add=True)
+    description = models.CharField(max_length=500)   
     expect_price = models.CharField(max_length=10)
-    order_address = models.ForeignKey(UserAddress, related_name='order_addr')
+    order_status = models.CharField(max_length=1, choices=STATUS_CHOICES,
+                            verbose_name='OrderStatus')
+    uid = models.ForeignKey(UserProfile)
+    product_catalog = models.ForeignKey(ProductCatalog)
+    order_address = models.ForeignKey(UserAddress)
 
 # 订单图片表？产品图片表？
 class OrderImage(models.Model):
@@ -160,8 +173,8 @@ class OrderImage(models.Model):
 # );
 # 
 class UserOrderExtraInfo(models.Model):
-    order_id = models.ForeignKey(UserOrder, related_name='order_extra_info')
-    item_id = models.ForeignKey(ProductCatalogItem, related_name='order_items')
+    order = models.ForeignKey(UserOrder)
+    item = models.ForeignKey(ProductCatalogItem)
     item_value = models.CharField(max_length=100)
 
 #  用户订单评论表 
