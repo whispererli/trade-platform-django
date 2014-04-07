@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 
+from .models import OrderComments
 from .models import ProductCatalog
 from .models import ProductCatalogItem
 from .models import UserAddress
@@ -13,6 +14,7 @@ from .models import UserProfile
 from .serializers import AddressSerializer
 from .serializers import MakeOrderExtraInfoSerializer
 from .serializers import MakeOrderSerializer
+from .serializers import OrderCommentSerializer
 from .serializers import ProductCatalogItemSerializer
 from .serializers import ProductCatalogSerializer
 from .serializers import UserOrderSerializer
@@ -65,10 +67,50 @@ class ProductCatalogItemDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset  = ProductCatalogItem.objects.all()
     serializer_class = ProductCatalogItemSerializer
     
-class UserOrderList(generics.ListCreateAPIView):
-    queryset  = UserOrder.objects.all()
+@csrf_exempt
+def make_comment(request): 
+    if request.method == 'POST':
+        req_json=json.loads(request.body)
+        logger.info('REQUEST:=>')
+        logger.info(req_json)
+        comment_serializer = OrderCommentSerializer(data=req_json['comment'])
+        if comment_serializer.is_valid():
+            comment = comment_serializer.save()           
+            try:
+                parent = OrderComments.objects.get(pk=req_json['parent'])
+            except OrderComments.DoesNotExist:
+                parent = None
+            if parent is not None:
+                parent_serializer = OrderCommentSerializer(instance=parent,data={"reply":comment.pk})
+                if parent_serializer.is_valid():
+                    parent_serializer.save()
+            return HttpResponse()
+        return HttpResponse(status=500)            
+    else: # GET
+        return HttpResponse("Not support GET.", content_type="text/plain", status=500)
+        
+class UserOrderListByFilter(generics.ListAPIView):
     serializer_class = UserOrderSerializer
-# request example
+    def get_queryset(self):
+        queryset = UserOrder.objects.all()
+        #filter by user id
+#         user = self.request.user
+#         return UserOrder.objects.filter(uid=user)
+        #filter by catalog
+        catalog = self.request.QUERY_PARAMS.get('catalog', None)
+        if catalog is not None:
+            return queryset.filter(product_catalog=catalog)
+        #filter by date range
+        from_date = self.request.QUERY_PARAMS.get('fromdate', None)
+        to_date = self.request.QUERY_PARAMS.get('fromdate', None)
+        if from_date is not None and to_date is not None:
+            return queryset.filter(expect_date_at__range=(from_date, to_date))
+        #filter by address, need to change address structure...
+        # no filter
+        return queryset
+        
+#TODO: should implement avro later
+# make_order request example
 # {
 #     "order": {
 #         "expect_date": "2014-03-12",
@@ -90,7 +132,7 @@ class UserOrderList(generics.ListCreateAPIView):
 #     ]
 # }
 @csrf_exempt
-def user_order_details(request): 
+def make_order(request): 
     if request.method == 'POST':
         req_json=json.loads(request.body)
         logger.info('REQUEST:=>')
@@ -104,4 +146,6 @@ def user_order_details(request):
             if extra_info_serializer.is_valid():
                 extra_info_serializer.save()
                 return HttpResponse(200)
-        return HttpResponse(500)
+        return HttpResponse(status=500)
+    else: # GET
+        return HttpResponse("Not support GET.", content_type="text/plain", status=500)

@@ -192,6 +192,8 @@ class OrderComments(models.Model):
     uid = models.ForeignKey(UserProfile)
     comment = models.CharField(max_length=500)
     comment_time = models.DateTimeField(auto_now_add=True)
+    reply = models.ForeignKey('self', null=True)
+    is_root = models.BooleanField()
 # 
 #  报价表 
 # CREATE TABLE user_quote_tbl

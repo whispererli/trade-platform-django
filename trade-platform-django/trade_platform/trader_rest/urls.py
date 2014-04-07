@@ -13,8 +13,9 @@ urlpatterns = patterns('trader_rest.views',
     url(r'^catalog/(?P<pk>[0-9]+)/$', views.ProductCatalogDetail.as_view()), 
     url(r'^catalogItem/$', views.ProductCatalogItemList.as_view()),
     url(r'^catalogItem/(?P<pk>[0-9]+)/$', views.ProductCatalogItemDetail.as_view()), 
-    url(r'^userOrder/$', views.UserOrderList.as_view()),
-    url(r'^makeOrder/$', views.user_order_details)
+    url(r'^userOrder/$', views.UserOrderListByFilter.as_view()),
+    url(r'^makeOrder/$', views.make_order),
+    url(r'^make_comment/$', views.make_comment)    
 )
                             
 urlpatterns = format_suffix_patterns(urlpatterns)

@@ -3,7 +3,7 @@ from django.test import TestCase
 from trader_rest.models import *
 from .models import *
 
-# Create your tests here.
+# test db data
 user = UserProfile(gender='M', birthday='1953-02-10', email='email1@email.com', user_pw='user_pw1',name='name1', phone='phone1', description='description1')
 user.save()
 user = UserProfile(gender='M', birthday='1953-02-12', email='email2@email.com', user_pw='user_pw2',name='name2', phone='phone2', description='description2')
