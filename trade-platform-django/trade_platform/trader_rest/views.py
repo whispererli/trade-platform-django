@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 
-from .models import OrderComments
+from .models import OrderTopics
 from .models import ProductCatalog
 from .models import ProductCatalogItem
 from .models import UserAddress
@@ -14,9 +14,10 @@ from .models import UserProfile
 from .serializers import AddressSerializer
 from .serializers import MakeOrderExtraInfoSerializer
 from .serializers import MakeOrderSerializer
-from .serializers import OrderCommentSerializer
+from .serializers import OrderTopicsSerializer
 from .serializers import ProductCatalogItemSerializer
 from .serializers import ProductCatalogSerializer
+from .serializers import TopicCommentsSerializer
 from .serializers import UserOrderSerializer
 from .serializers import UserSerializer
 
@@ -73,17 +74,21 @@ def make_comment(request):
         req_json=json.loads(request.body)
         logger.info('REQUEST:=>')
         logger.info(req_json)
-        comment_serializer = OrderCommentSerializer(data=req_json['comment'])
+        try:
+            topic = OrderTopics.objects.get(pk=req_json['topic'])
+        except OrderTopics.DoesNotExist:
+            topic = None
+        except KeyError:
+            topic = None
+        if topic is None:
+            topic_serializer = OrderTopicsSerializer(data={'order_id':req_json['comment']['order_id'],'uid':req_json['comment']['uid']})
+            if topic_serializer.is_valid():
+                topic = topic_serializer.save()
+        
+        req_json['comment']['tid'] = topic.pk
+        comment_serializer = TopicCommentsSerializer(data=req_json['comment'])
         if comment_serializer.is_valid():
-            comment = comment_serializer.save()           
-            try:
-                parent = OrderComments.objects.get(pk=req_json['parent'])
-            except OrderComments.DoesNotExist:
-                parent = None
-            if parent is not None:
-                parent_serializer = OrderCommentSerializer(instance=parent,data={"reply":comment.pk})
-                if parent_serializer.is_valid():
-                    parent_serializer.save()
+            comment_serializer.save()
             return HttpResponse()
         return HttpResponse(status=500)            
     else: # GET

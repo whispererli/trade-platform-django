@@ -9,9 +9,10 @@ import logging
 
 from rest_framework import serializers
 
-from .models import OrderComments
+from .models import OrderTopics
 from .models import ProductCatalog
 from .models import ProductCatalogItem
+from .models import TopicComments
 from .models import UserAddress
 from .models import UserOrder
 from .models import UserOrderExtraInfo
@@ -53,44 +54,34 @@ class OrderExtraInfoSerializer(serializers.ModelSerializer):
     item = ProductCatalogItemSerializer()
     class Meta:
         model = UserOrderExtraInfo
-        fields = ('order','item', 'item_value')
+        fields = ('order','item', 'item_value',)
 
-class OrderCommentRecursiveField(serializers.RelatedField):
-    def to_native(self, value):       
-        content = {"order_id" : value.order_id.pk, "comment": value.comment, "comment_time": value.comment_time.__str__(), "uid": value.uid.pk, "reply": None}
-        try:
-            reply = OrderComments.objects.get(pk=value.reply)
-        except OrderComments.DoesNotExist:
-            reply = None
-        if reply is not None:
-            self.to_native_recursive(reply, content)
-        return content
-    def to_native_recursive(self, comment, content):
-        content['reply'] = {'order_id' : comment.order_id.pk, 'comment': comment.comment, 'comment_time': comment.comment_time.__str__(), 'uid': comment.uid.pk, 'reply': None}
-        try:
-            reply = OrderComments.objects.get(pk=comment.reply)
-        except OrderComments.DoesNotExist:
-            reply = None
-        if reply is not None:
-            self.to_native_recursive(reply, content)
-
-class OrderCommentSerializer(serializers.ModelSerializer):
+class TopicCommentsSerializer(serializers.ModelSerializer):
+    tid = serializers.PrimaryKeyRelatedField()
+    class Meta:
+        model = TopicComments
+        fields = ('tid','comment','comment_time')
+        read_only_fields  = ('comment_time',)
+        
+class OrderTopicsSerializer(serializers.ModelSerializer):
     order_id = serializers.PrimaryKeyRelatedField()
     uid = serializers.PrimaryKeyRelatedField()
-    reply = serializers.PrimaryKeyRelatedField(required=False)
+    topiccomments_set = TopicCommentsSerializer(many=True, required=False)
     class Meta:
-        model = OrderComments
-        fields = ('order_id','comment','comment_time','uid','reply', 'is_root')
-        read_only_fields  = ('id', 'comment_time')
-        
+        model = OrderTopics
+        fields = ('id','order_id','uid','topiccomments_set')
+        read_only_fields  = ('id',)
+    def save_object(self, obj, **kwargs):
+        super(OrderTopicsSerializer, self).save_object(obj, **kwargs)
+        return obj       
 class UserOrderSerializer(serializers.ModelSerializer):
     uid = UserSerializer()
     order_address = AddressSerializer()
     userorderextrainfo_set = OrderExtraInfoSerializer(many=True)
-    ordercomments_set = OrderCommentRecursiveField(many=True)
+    ordertopics_set = OrderTopicsSerializer(many=True)
     class Meta:
         model = UserOrder
-        fields = ('id','expect_date','order_time', 'description','expect_price','product_catalog','order_address', 'userorderextrainfo_set','uid','ordercomments_set')
+        fields = ('id','expect_date','order_time', 'description','expect_price','product_catalog','order_address', 'userorderextrainfo_set','uid','ordertopics_set')
         read_only_fields  = ('id', 'order_time')
         
 class MakeOrderExtraInfoSerializer(serializers.ModelSerializer):

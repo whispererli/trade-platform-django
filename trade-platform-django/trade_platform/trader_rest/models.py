@@ -187,13 +187,14 @@ class UserOrderExtraInfo(models.Model):
 #   FOREIGN KEY (user_order_comments_tbl_uid) REFERENCES user_tbl(uid),
 #   FOREIGN KEY (user_order_comments_tbl_order_id) REFERENCES user_order_tbl(order_id)
 # );
-class OrderComments(models.Model):
+class OrderTopics(models.Model):
     order_id = models.ForeignKey(UserOrder)
     uid = models.ForeignKey(UserProfile)
+    
+class TopicComments(models.Model):
+    tid = models.ForeignKey(OrderTopics)
     comment = models.CharField(max_length=500)
     comment_time = models.DateTimeField(auto_now_add=True)
-    reply = models.ForeignKey('self', null=True)
-    is_root = models.BooleanField()
 # 
 #  报价表 
 # CREATE TABLE user_quote_tbl
