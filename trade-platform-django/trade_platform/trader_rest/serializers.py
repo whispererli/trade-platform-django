@@ -4,9 +4,10 @@ Created on Apr 1, 2014
 @author: m68li
 '''
 #from django.core import serializers as djangoSerializers
-import json
 import logging
 
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from rest_framework import serializers
 
 from .models import OrderTopics
@@ -27,13 +28,31 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ('uid', 'address1', 'address2','city', 'nation', 'post')
         write_only_fields  = ('uid',)
 
-class UserSerializer(serializers.ModelSerializer):
-    address = AddressSerializer(many=True)
+class UserProfileSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField()
     class Meta:
         model = UserProfile
-        fields = ('id', 'gender', 'name', 'birthday','email', 'phone', 'description', 'address', 'regist_date')
-        write_only_fields  = ('user_pw', )
-        read_only_fields  = ('id', 'regist_date')
+        fields = ('id', 'gender', 'name', 'birthday', 'phone', 'description', 'user')
+        read_only_fields  = ('id',)
+        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username','password','is_active','is_staff','date_joined')
+        read_only_fields  = ('id','is_active','is_staff', 'date_joined')
+    def restore_object(self, attrs, instance=None):
+        if instance is None:
+            """
+            Instantiate a new User instance.
+            """
+            user = User(email=attrs['email'], username=attrs['email'])
+            user.set_password(attrs['password'])
+        else:
+            instance.email=attrs['email']
+            instance.username=attrs['email']
+            instance.password=attrs['password']
+            return instance
+        return user
 
 class ProductCatalogItemSerializer(serializers.ModelSerializer):
     class Meta:
