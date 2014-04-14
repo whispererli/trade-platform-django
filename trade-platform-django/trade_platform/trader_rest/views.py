@@ -3,7 +3,6 @@ import logging
 
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
 from rest_framework.decorators import api_view
 
@@ -82,29 +81,30 @@ class ProductCatalogItemDetail(generics.RetrieveUpdateAPIView):
     queryset  = ProductCatalogItem.objects.all()
     serializer_class = ProductCatalogItemSerializer
 
-@csrf_exempt
+@api_view(['POST'])
 def make_comment(request): 
-    if request.method == 'POST':
-        req_json=json.loads(request.body)
-        logger.info('%s:%s' % ('REQUEST BODY', req_json))
-        try:
-            topic = OrderTopics.objects.get(pk=req_json['topic'])
-        except (OrderTopics.DoesNotExist,KeyError):
-            logger.info('Topic not found.')
-            topic = None
-        if topic is None:
-            topic_serializer = OrderTopicsSerializer(data={'order_id':req_json['comment']['order_id'],'uid':request.user.pk})
-            if topic_serializer.is_valid():
-                topic = topic_serializer.save()
-        
-        req_json['comment']['tid'] = topic.pk
-        comment_serializer = TopicCommentsSerializer(data=req_json['comment'])
-        if comment_serializer.is_valid():
-            comment_serializer.save()
-            return HttpResponse()
-        return HttpResponse(status=500)            
-    else: # GET
-        return HttpResponse("Not support GET.", content_type="text/plain", status=500)
+    req_json=json.loads(request.body)
+    logger.info('%s:%s' % ('REQUEST BODY', req_json))
+    try:
+        topic = OrderTopics.objects.get(pk=req_json['topic'])
+    except (OrderTopics.DoesNotExist,KeyError):
+        logger.info('Topic not found.')
+        topic = None
+    if topic is None:
+        topic_serializer = OrderTopicsSerializer(data={'order_id':req_json['comment']['order_id'],'uid':request.user.pk})
+        if topic_serializer.is_valid():
+            topic = topic_serializer.save()
+    
+    req_json['comment']['tid'] = topic.pk
+    comment_serializer = TopicCommentsSerializer(data=req_json['comment'])
+    if comment_serializer.is_valid():
+        comment_serializer.save()
+        return HttpResponse()
+    return HttpResponse(status=500)
+
+class UserOrderList(generics.ListAPIView):
+    queryset  = UserOrder.objects.all()
+    serializer_class = UserOrderSerializer
         
 class UserOrderListByFilter(generics.ListAPIView):
     serializer_class = UserOrderSerializer
@@ -147,7 +147,7 @@ class UserOrderListByFilter(generics.ListAPIView):
 #     ]
 # }
 @api_view(['POST'])
-def make_order(request, format=None):
+def make_order(request):
     req_json=json.loads(request.body)
     logger.info('%s:%s' % ('REQUEST BODY', req_json))
     logger.info(req_json)
