@@ -2,10 +2,12 @@ import json
 import logging
 
 from django.contrib.auth.models import User
+from django.http import Http404
 from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework.decorators import api_view
 
+from .models import OrderImage
 from .models import OrderTopics
 from .models import ProductCatalog
 from .models import ProductCatalogItem
@@ -15,6 +17,7 @@ from .models import UserProfile
 from .serializers import AddressSerializer
 from .serializers import MakeOrderExtraInfoSerializer
 from .serializers import MakeOrderSerializer
+from .serializers import OrderImageSerializer
 from .serializers import OrderTopicsSerializer
 from .serializers import ProductCatalogItemSerializer
 from .serializers import ProductCatalogSerializer
@@ -37,6 +40,16 @@ class UserDetail(generics.RetrieveUpdateAPIView):
     queryset  = User.objects.all()
     serializer_class = UserSerializer
 
+class UserProfileSelf(generics.ListAPIView):
+    serializer_class = UserProfileSerializer
+    model = UserProfile
+    allow_empty = False
+    def get_object(self, pk):  
+        try:  
+            return UserProfile.objects.filter(user=self.request.user)
+        except UserProfile.DoesNotExist:  
+            raise Http404
+
 class UserProfileList(generics.ListCreateAPIView):
     queryset  = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
@@ -47,7 +60,13 @@ class UserProfileDetail(generics.RetrieveUpdateAPIView):
     """
     queryset  = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
-    
+
+class SelfAddressList(generics.ListAPIView):
+    serializer_class = AddressSerializer
+    def get_queryset(self):
+        queryset = UserAddress.objects.all()
+        return UserAddress.objects.filter(uid=self.request.user.pk)
+		
 class AddressList(generics.ListCreateAPIView):
     queryset  = UserAddress.objects.all()
     serializer_class = AddressSerializer
@@ -65,11 +84,22 @@ class ProductCatalogList(generics.ListCreateAPIView):
 
 class ProductCatalogDetail(generics.RetrieveUpdateAPIView):
     """
-    Retrieve, update a user address instance.
+    Retrieve, update a ProductCatalogDetail.
     """
     queryset  = ProductCatalog.objects.all()
     serializer_class = ProductCatalogSerializer
 
+class OrderImageList(generics.ListCreateAPIView):
+    queryset  = OrderImage.objects.all()
+    serializer_class = OrderImageSerializer
+
+class OrderImageDetail(generics.RetrieveUpdateAPIView):
+    """
+    Retrieve, update a order image.
+    """
+    queryset  = OrderImage.objects.all()
+    serializer_class = OrderImageSerializer	
+	
 class ProductCatalogItemList(generics.ListCreateAPIView):
     queryset  = ProductCatalogItem.objects.all()
     serializer_class = ProductCatalogItemSerializer
@@ -149,9 +179,9 @@ class UserOrderListByFilter(generics.ListAPIView):
 @api_view(['POST'])
 def make_order(request):
     req_json=json.loads(request.body)
-    logger.info('%s:%s' % ('REQUEST BODY', req_json))
-    logger.info(req_json)
+    logger.info('%s:%s' % ('REQUEST BODY', req_json))   
     req_json['order']['uid']=request.user.pk
+    logger.info(req_json)
     order_serializer = MakeOrderSerializer(data=req_json['order'])
     if order_serializer.is_valid():
         order = order_serializer.save()
@@ -160,5 +190,5 @@ def make_order(request):
         extra_info_serializer = MakeOrderExtraInfoSerializer(data=req_json['extraInfo'], many=True)
         if extra_info_serializer.is_valid():
             extra_info_serializer.save()
-            return HttpResponse(200)
+        return HttpResponse(order.pk, content_type="text/plain")
     return HttpResponse(status=500)

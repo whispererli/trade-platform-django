@@ -6,10 +6,10 @@ Created on Apr 1, 2014
 #from django.core import serializers as djangoSerializers
 import logging
 
-from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
+from .models import OrderImage
 from .models import OrderTopics
 from .models import ProductCatalog
 from .models import ProductCatalogItem
@@ -25,14 +25,14 @@ logger = logging.getLogger('trader_rest')
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAddress
-        fields = ('uid', 'address1', 'address2','city', 'nation', 'post')
+        fields = ('uid', 'address1', 'address2','city', 'nation', 'post','id')
         write_only_fields  = ('uid',)
 
 class UserProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField()
     class Meta:
         model = UserProfile
-        fields = ('id', 'gender', 'name', 'birthday', 'phone', 'description', 'user')
+        fields = ('id', 'gender', 'name', 'birthday', 'phone', 'description','profile_image', 'user')
         read_only_fields  = ('id',)
         
 class UserSerializer(serializers.ModelSerializer):
@@ -75,6 +75,12 @@ class OrderExtraInfoSerializer(serializers.ModelSerializer):
         model = UserOrderExtraInfo
         fields = ('order','item', 'item_value',)
 
+class OrderImageSerializer(serializers.ModelSerializer):
+    order_id = serializers.PrimaryKeyRelatedField()
+    class Meta:
+        model = OrderImage
+        fields = ('order_id','path')
+		
 class TopicCommentsSerializer(serializers.ModelSerializer):
     tid = serializers.PrimaryKeyRelatedField()
     class Meta:
@@ -98,9 +104,10 @@ class UserOrderSerializer(serializers.ModelSerializer):
     order_address = AddressSerializer()
     userorderextrainfo_set = OrderExtraInfoSerializer(many=True)
     ordertopics_set = OrderTopicsSerializer(many=True)
+    order_images = OrderImageSerializer(many=True)
     class Meta:
         model = UserOrder
-        fields = ('id','expect_date','order_time', 'description','expect_price','product_catalog','order_address', 'userorderextrainfo_set','uid','ordertopics_set')
+        fields = ('id','expect_date','order_time', 'description','expect_price','product_catalog','order_address', 'userorderextrainfo_set','uid','ordertopics_set','order_images')
         read_only_fields  = ('id', 'order_time')
         
 class MakeOrderExtraInfoSerializer(serializers.ModelSerializer):
@@ -115,7 +122,7 @@ class MakeOrderSerializer(serializers.ModelSerializer):
     product_catalog = serializers.PrimaryKeyRelatedField()
     class Meta:
         model = UserOrder
-        fields = ('expect_date','description','expect_price','product_catalog','order_address','uid')
+        fields = ('expect_date','description','expect_price','order_status','product_catalog','order_address','uid')
     def save_object(self, obj, **kwargs):
         super(MakeOrderSerializer, self).save_object(obj, **kwargs)
         return obj

@@ -29,6 +29,7 @@ class UserProfile(models.Model):
     name = models.CharField(max_length=20,null=True)
     phone = models.CharField(max_length=20,null=True)
     description = models.CharField(max_length=500,null=True)
+    profile_image = models.CharField(max_length=50,null=True)
 #     def save(self, *args, **kwargs):       
 #         #create user in django
 #         try:
