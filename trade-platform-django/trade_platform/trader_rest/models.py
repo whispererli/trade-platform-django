@@ -48,8 +48,8 @@ class UserAddress(models.Model):
     uid  = models.ForeignKey(User, related_name='address') # Many-to-one User profile
     address1 = models.CharField(max_length=100)
     address2 = models.CharField(max_length=100, null=True)
-    city  = models.CharField(max_length=10)
-    nation  = models.CharField(max_length=10)
+    city  = models.CharField(max_length=50)
+    nation  = models.CharField(max_length=30)
     post = models.CharField(max_length=10)
 
 #  用户登陆表 

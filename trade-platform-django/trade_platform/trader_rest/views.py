@@ -63,6 +63,7 @@ class UserProfileDetail(generics.RetrieveUpdateAPIView):
 
 class SelfAddressList(generics.ListAPIView):
     serializer_class = AddressSerializer
+    allow_empty = False
     def get_queryset(self):
         queryset = UserAddress.objects.all()
         return UserAddress.objects.filter(uid=self.request.user.pk)
@@ -135,7 +136,11 @@ def make_comment(request):
 class UserOrderList(generics.ListAPIView):
     queryset  = UserOrder.objects.all()
     serializer_class = UserOrderSerializer
-        
+
+class UserOrderDetail(generics.RetrieveUpdateAPIView):
+    queryset  = UserOrder.objects.all()
+    serializer_class = UserOrderSerializer
+
 class UserOrderListByFilter(generics.ListAPIView):
     serializer_class = UserOrderSerializer
     def get_queryset(self):
@@ -176,6 +181,45 @@ class UserOrderListByFilter(generics.ListAPIView):
 #         }
 #     ]
 # }
+@api_view(['POST'])
+def updateOrInsertProfile(request):
+    req_json=json.loads(request.body)
+    req_json['user']=request.user.pk
+    logger.info('%s:%s' % ('REQUEST BODY', req_json))
+    try:
+        userProfile = UserProfile.objects.get(user=request.user.pk)
+    except UserProfile.DoesNotExist:
+        userProfile = None
+    if userProfile is not None:
+        serializer = UserProfileSerializer(userProfile, data=req_json)
+    else:
+        serializer = UserProfileSerializer(data=req_json)
+    if serializer.is_valid():
+        serializer.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=500)
+
+@api_view(['POST'])
+def updateOrAddNewAddress(request):
+    req_json=json.loads(request.body)
+    req_json['uid']=request.user.pk
+    logger.info('%s:%s' % ('REQUEST BODY', req_json))
+    if req_json['id'] is not None:
+        try:
+            userAddr = UserAddress.objects.get(id=req_json['id'])
+        except UserAddress.DoesNotExist:
+            userAddr = None
+    else:
+        userAddr = None
+    if userAddr is not None:
+        serializer = AddressSerializer(userAddr, data=req_json)
+    else:
+        serializer = AddressSerializer(data=req_json)
+    if serializer.is_valid():
+        serializer.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=500)
+    
 @api_view(['POST'])
 def make_order(request):
     req_json=json.loads(request.body)

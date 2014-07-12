@@ -21,8 +21,12 @@ urlpatterns = patterns('trader_rest.views',
     url(r'^catalogItem/$', views.ProductCatalogItemList.as_view()),
     url(r'^catalogItem/(?P<pk>[0-9]+)/$', views.ProductCatalogItemDetail.as_view()), 
     url(r'^userOrder/$', views.UserOrderList.as_view()),
-    url(r'^makeOrder/$', views.make_order),
+	url(r'^userOrder/(?P<pk>[0-9]+)/$', views.UserOrderDetail.as_view()),
+	
+    url(r'^makeOrder/', views.make_order),
     url(r'^make_comment/$', views.make_comment),
+	url(r'^updateInsertProfile/$', views.updateOrInsertProfile),
+	url(r'^updateInsertAddress/$', views.updateOrAddNewAddress),
     url(r'^api-token-auth/', rest_view.obtain_auth_token)
 )
                             
